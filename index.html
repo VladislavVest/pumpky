@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pumpky - Task Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@500;700&family=Pirata+One&family=Unbounded:wght@500;700&subset=cyrillic&display=swap"
+    rel="stylesheet"
+  />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+
+<body>
+  <!-- Атмосферный многослойный фон (2.5D) -->
+  <div id="scene-bg" class="scene-bg">
+    <div id="fireflies-layer" class="fireflies-layer"></div>
+    <div class="moon"></div>
+    <div class="clouds-animated"></div>
+    <div class="stars"></div>
+    <div class="mist"></div>
+    <div class="falling-leaf leaf-1"></div>
+    <div class="falling-leaf leaf-2"></div>
+  </div>
+
+  <!-- Видео-заставка при запуске -->
+  <div id="intro-overlay" class="intro-overlay active">
+    <video id="intro-video" class="intro-video" autoplay muted playsinline preload="auto">
+      <source src="Sourses/start.mp4" type="video/mp4" />
+    </video>
+    <button id="btn-skip-intro" class="skip-intro-btn">Пропустить →</button>
+  </div>
+
+  <!-- Стартовое меню -->
+  <div id="start-overlay" class="overlay visible">
+    <div class="modal-card">
+      <div class="menu-tabs">
+        <button id="tab-session" class="menu-tab-btn active">Сессия</button>
+        <button id="tab-settings" class="menu-tab-btn">Настройки</button>
+      </div>
+
+      <!-- Вкладка сессии -->
+      <div id="panel-session" class="menu-panel">
+        <div class="modal-icon">🎃</div>
+        <h1 id="menu-title">PUMPKY</h1>
+        <p id="menu-subtitle" class="subtitle">Выставь количество задач на сессию. Каждая тыква — один закрытый шаг.</p>
+
+        <div class="counter-box">
+          <label id="menu-count-label" for="pumpkin-count">Количество тыкв (от 3 до 36):</label>
+          <div class="counter-controls">
+            <button id="btn-minus" class="circle-btn" title="Уменьшить">−</button>
+            <input id="pumpkin-count" type="number" min="3" max="36" value="12" />
+            <button id="btn-plus" class="circle-btn" title="Увеличить">+</button>
+          </div>
+          <input id="pumpkin-slider" type="range" min="3" max="36" value="12" />
+        </div>
+
+        <div class="modal-actions">
+          <button id="btn-start-session" class="primary-btn">Посадить тыквы</button>
+          <button id="btn-alarm-timer" class="secondary-btn timer-menu-btn">⏱ Таймер</button>
+          <button id="btn-continue-saved" class="secondary-btn hidden">Продолжить сохранённое</button>
+        </div>
+      </div>
+
+      <!-- Вкладка настроек внутри меню -->
+      <div id="panel-settings" class="menu-panel hidden">
+        <h2 id="settings-heading" class="settings-heading">Настройки</h2>
+
+        <div class="settings-list">
+          <div class="setting-row">
+            <span id="setting-lang-label" class="setting-label">Язык интерфейса</span>
+            <button id="btn-lang" class="setting-action-btn">🌐 RU</button>
+          </div>
+
+          <div class="setting-row">
+            <span id="setting-sfx-label" class="setting-label">Звуки эффектов и кликов</span>
+            <button id="btn-sfx" class="setting-action-btn">🔊 ВКЛ</button>
+          </div>
+
+          <div class="setting-row setting-row-music">
+            <div class="setting-music-top">
+              <span id="setting-music-label" class="setting-label">Фоновая музыка</span>
+              <div class="setting-music-controls">
+                <button id="btn-menu-music-toggle" class="setting-action-btn">🎵 ВКЛ</button>
+                <input id="menu-music-slider" type="range" min="0" max="100" value="35" />
+                <span id="menu-music-value" class="setting-vol-val">35%</span>
+              </div>
+            </div>
+            <div class="setting-track-row">
+              <span id="setting-track-label" class="setting-sublabel">Трек</span>
+              <select id="music-track-select" class="setting-select"></select>
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <span id="setting-skin-label" class="setting-label">Скин тыкв</span>
+            <select id="pumpkin-skin-select" class="setting-select"></select>
+          </div>
+
+          <div class="setting-row">
+            <div class="setting-pop-label-wrap">
+              <span id="setting-pop-power-label" class="setting-label">Сила лопанья тыкв</span>
+            </div>
+            <div class="setting-slider-controls">
+              <input id="pop-power-slider" type="range" min="1" max="10" step="1" value="1" />
+              <span id="pop-power-value" class="setting-vol-val">1x</span>
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <span id="setting-fireflies-label" class="setting-label">Светлячки в лесу (2–10)</span>
+            <div class="mini-stepper">
+              <button id="btn-fireflies-minus" class="mini-step-btn">−</button>
+              <span id="fireflies-count-val" class="mini-step-val">3</span>
+              <button id="btn-fireflies-plus" class="mini-step-btn">+</button>
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <span id="setting-bg-label" class="setting-label">Режим просмотра фона (H)</span>
+            <button id="btn-menu-zen" class="setting-action-btn">🌲 Фон</button>
+          </div>
+
+          <div class="setting-row">
+            <span id="setting-custom-bg-label" class="setting-label">Свой фон</span>
+            <div class="custom-bg-actions">
+              <button id="btn-choose-bg" class="setting-action-btn">🖼 Выбрать</button>
+              <button id="btn-reset-bg" class="setting-action-btn hidden">↺ Сброс</button>
+              <input id="custom-bg-input" type="file" accept="image/*" class="hidden" />
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <span id="setting-reset-defaults-label" class="setting-label">Сброс настроек</span>
+            <button id="btn-reset-defaults" class="setting-action-btn setting-reset-btn">↺ По умолчанию</button>
+          </div>
+
+          <div class="setting-row">
+            <span id="setting-about-label" class="setting-label">Информация</span>
+            <button id="btn-open-about" type="button" class="setting-action-btn">📜 О программе</button>
+          </div>
+
+          <div class="setting-row">
+            <span id="setting-exit-label" class="setting-label">Завершение работы</span>
+            <button id="btn-menu-exit" type="button" class="setting-action-btn setting-exit-btn">⏻ Выход</button>
+          </div>
+        </div>
+
+        <div class="settings-footer-actions">
+          <button id="btn-settings-to-pumpkins" class="primary-btn settings-back-btn hidden">🎃 К тыквам</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Основной рабочий экран -->
+  <main id="workspace" class="workspace hidden">
+    <!-- Верхняя панель управления -->
+    <header class="topbar">
+      <div class="stats">
+        <span class="badge"><span id="label-done">🎃 Выполнено:</span> <strong id="done-count">0</strong> / <strong id="total-count">0</strong></span>
+        <span id="save-status" class="save-indicator">Автосохранение включено</span>
+        <span id="app-start-time" class="start-time-pill">Старт: --:--</span>
+        <span id="fire-total-minutes" class="fire-minutes-badge">🔥 0 мин</span>
+      </div>
+
+      <div class="controls">
+        <button id="btn-add-pumpkin" class="tool-btn" title="Посадить новую тыкву с таймером 00:00">+ Тыква</button>
+        <button id="btn-undo" class="tool-btn" disabled title="Вернуть последнюю лопнутую тыкву">↩ Вернуть</button>
+        <button id="btn-save" class="tool-btn" title="Сохранить прогресс вручную">💾 Сохранить</button>
+        <button id="btn-top-sound" class="tool-btn crow-sound-btn" title="Вкл / Выкл звуки">
+          <span id="crow-icon-slot" class="crow-icon-slot"></span>
+          <span id="btn-top-sound-text">Звук</span>
+        </button>
+        <button id="btn-restart" class="tool-btn danger" title="Полностью сбросить сессию и вернуться к выбору">🔄 Рестарт</button>
+        <button id="btn-menu" class="tool-btn" title="Открыть меню и настройки">⚙ Меню</button>
+        <button id="btn-exit" class="tool-btn exit-btn" title="Сохранить и выйти из Pumpky">⏻ Выход</button>
+      </div>
+    </header>
+
+    <!-- Поляна с тыквами -->
+    <section id="garden-grid" class="garden-grid"></section>
+  </main>
+
+  <!-- Модальное окно «О программе» -->
+  <div id="about-modal" class="dark-dialog-backdrop hidden">
+    <div class="dark-dialog-card">
+      <div class="about-gothic-title">Vestimo</div>
+      <p id="about-modal-text" class="dark-dialog-sub">
+        Программа построена на технике «помидоро»: работаешь короткими фокусированными подходами без отвлечений, а затем делаешь паузу, чтобы держать темп и не выгореть.
+      </p>
+      <div class="about-contact-badge">TG: @vestimo13</div>
+      <div class="dark-dialog-actions">
+        <button id="btn-about-back" type="button" class="primary-btn dialog-btn-flex">← Вернуться</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Тёмное модальное окно таймера (часы и минуты) -->
+  <div id="alarm-modal" class="dark-dialog-backdrop hidden">
+    <div class="dark-dialog-card">
+      <div class="dark-dialog-icon">⏱</div>
+      <h3 id="alarm-modal-title" class="dark-dialog-title">Таймер</h3>
+      <p id="alarm-modal-sub" class="dark-dialog-sub">Выставь часы и минуты — по окончании прозвучит сигнал.</p>
+
+      <div id="alarm-countdown-display" class="alarm-countdown-display">00:15:00</div>
+
+      <div class="alarm-inputs-row">
+        <div class="alarm-unit-box">
+          <label id="alarm-hours-label" for="alarm-hours-input">Часы</label>
+          <input id="alarm-hours-input" type="number" min="0" max="23" value="0" />
+        </div>
+        <span class="alarm-colon">:</span>
+        <div class="alarm-unit-box">
+          <label id="alarm-minutes-label" for="alarm-minutes-input">Минуты</label>
+          <input id="alarm-minutes-input" type="number" min="0" max="59" value="15" />
+        </div>
+      </div>
+
+      <div class="alarm-presets">
+        <button type="button" class="preset-chip" data-mins="5">5 мин</button>
+        <button type="button" class="preset-chip" data-mins="15">15 мин</button>
+        <button type="button" class="preset-chip" data-mins="25">25 мин</button>
+        <button type="button" class="preset-chip" data-mins="60">1 ч</button>
+      </div>
+
+      <div class="dark-dialog-actions">
+        <button id="btn-alarm-start" type="button" class="primary-btn dialog-btn-flex">▶ Запустить</button>
+        <button id="btn-alarm-stop" type="button" class="secondary-btn dialog-btn-flex hidden">⏹ Сбросить</button>
+        <button id="btn-alarm-close" type="button" class="secondary-btn dialog-btn-flex">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Тёмное модальное окно подтверждения рестарта -->
+  <div id="restart-modal" class="dark-dialog-backdrop hidden">
+    <div class="dark-dialog-card">
+      <div class="dark-dialog-icon">🔄</div>
+      <h3 id="restart-modal-title" class="dark-dialog-title">Сбросить сессию?</h3>
+      <p id="restart-modal-text" class="dark-dialog-sub">
+        Текущая сессия будет полностью сброшена, и вы вернётесь к выбору количества тыкв.
+      </p>
+      <div class="dark-dialog-actions">
+        <button id="btn-restart-cancel" type="button" class="secondary-btn dialog-btn-flex">Отмена</button>
+        <button id="btn-restart-confirm" type="button" class="dialog-danger-btn dialog-btn-flex">Да, рестарт</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Тёмное модальное окно подтверждения выхода -->
+  <div id="exit-modal" class="dark-dialog-backdrop hidden">
+    <div class="dark-dialog-card">
+      <div class="dark-dialog-icon">⏻</div>
+      <h3 id="exit-modal-title" class="dark-dialog-title">Вы уверены?</h3>
+      <p id="exit-modal-text" class="dark-dialog-sub">
+        Прогресс будет сохранён, а работа программы завершится.
+      </p>
+      <div class="dark-dialog-actions">
+        <button id="btn-exit-cancel" type="button" class="secondary-btn dialog-btn-flex">Отмена</button>
+        <button id="btn-exit-confirm" type="button" class="dialog-danger-btn dialog-btn-flex">Да, выйти</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Тёмное модальное окно статистики сессии -->
+  <div id="summary-modal" class="dark-dialog-backdrop hidden">
+    <div class="dark-dialog-card summary-dialog-card">
+      <div class="dark-dialog-icon">🎃</div>
+      <h3 id="summary-modal-title" class="dark-dialog-title">Сессия завершена!</h3>
+      <p id="summary-modal-sub" class="dark-dialog-sub">
+        Все тыквы лопнуты — вот итог твоего фокуса.
+      </p>
+
+      <div class="summary-stats-grid">
+        <div class="summary-stat-item">
+          <span id="summary-label-total-time" class="summary-stat-label">Общее время</span>
+          <strong id="summary-total-time" class="summary-stat-value">00:00:00</strong>
+        </div>
+        <div class="summary-stat-item">
+          <span id="summary-label-done" class="summary-stat-label">Закрыто тыкв</span>
+          <strong id="summary-done-count" class="summary-stat-value">0 / 0</strong>
+        </div>
+        <div class="summary-stat-item">
+          <span id="summary-label-avg" class="summary-stat-label">Среднее на задачу</span>
+          <strong id="summary-avg-time" class="summary-stat-value">00:00</strong>
+        </div>
+        <div class="summary-stat-item">
+          <span id="summary-label-finished-at" class="summary-stat-label">Завершено в</span>
+          <strong id="summary-finished-at" class="summary-stat-value">--:--</strong>
+        </div>
+        <div class="summary-stat-item summary-stat-wide">
+          <span id="summary-label-longest" class="summary-stat-label">Самая долгая задача</span>
+          <strong id="summary-longest-task" class="summary-stat-value">—</strong>
+        </div>
+      </div>
+
+      <div class="dark-dialog-actions">
+        <button id="btn-summary-stay" type="button" class="secondary-btn dialog-btn-flex">К поляне</button>
+        <button id="btn-summary-new" type="button" class="primary-btn dialog-btn-flex">Новая сессия</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>

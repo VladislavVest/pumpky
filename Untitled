@@ -1,0 +1,1 @@
+askPlaceholder: (n) => `Задача #${n
