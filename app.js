@@ -497,7 +497,7 @@ function playButtonClick() {
       clickAudioCtx = new AudioCtx();
     }
     if (clickAudioCtx.state === 'suspended') {
-      clickAudioCtx.resume().catch(() => {});
+      clickAudioCtx.resume().catch(() => { });
     }
 
     const now = clickAudioCtx.currentTime;
@@ -517,7 +517,7 @@ function playButtonClick() {
 
     osc.start(now);
     osc.stop(now + 0.035);
-  } catch (_) {}
+  } catch (_) { }
 }
 
 // Звук вырастания новой тыквы
@@ -532,8 +532,8 @@ function playAlarmSound() {
   try {
     alarmSound.currentTime = 0;
     const p = alarmSound.play();
-    if (p && typeof p.catch === 'function') p.catch(() => {});
-  } catch (_) {}
+    if (p && typeof p.catch === 'function') p.catch(() => { });
+  } catch (_) { }
 }
 
 let lastGrownPumpkinId = null;
@@ -547,7 +547,7 @@ function playGrowUpSound() {
     growUpSound.currentTime = 0;
     const playPromise = growUpSound.play();
     if (playPromise && typeof playPromise.catch === 'function') {
-      playPromise.catch(() => {});
+      playPromise.catch(() => { });
     }
   } catch (err) {
     // игнорируем ошибку воспроизведения
@@ -581,7 +581,7 @@ class SoundEngine {
     this.lastPopIndex = -1;
   }
 
-  init() {}
+  init() { }
 
   setTrack(trackId) {
     const track = getTrackById(trackId);
@@ -610,15 +610,15 @@ class SoundEngine {
     try {
       this.introAudio.currentTime = 0;
       const p = this.introAudio.play();
-      if (p && typeof p.catch === 'function') p.catch(() => {});
-    } catch (_) {}
+      if (p && typeof p.catch === 'function') p.catch(() => { });
+    } catch (_) { }
   }
 
   stopIntroSound() {
     try {
       this.introAudio.pause();
       this.introAudio.currentTime = 0;
-    } catch (_) {}
+    } catch (_) { }
   }
 
   playWelcomeChord() {
@@ -640,8 +640,8 @@ class SoundEngine {
       const popAudio = new Audio(this.popPaths[idx]);
       popAudio.volume = 0.8;
       const p = popAudio.play();
-      if (p && typeof p.catch === 'function') p.catch(() => {});
-    } catch (_) {}
+      if (p && typeof p.catch === 'function') p.catch(() => { });
+    } catch (_) { }
   }
 
   startAmbient() {
@@ -649,15 +649,15 @@ class SoundEngine {
     try {
       if (this.bgmAudio.paused) {
         const p = this.bgmAudio.play();
-        if (p && typeof p.catch === 'function') p.catch(() => {});
+        if (p && typeof p.catch === 'function') p.catch(() => { });
       }
-    } catch (_) {}
+    } catch (_) { }
   }
 
   stopAmbient() {
     try {
       this.bgmAudio.pause();
-    } catch (_) {}
+    } catch (_) { }
   }
 
   toggleMusic() {
@@ -715,12 +715,14 @@ let state = {
 };
 
 let tickerInterval = null;
+let lastTickerNow = 0;
 let showingSavedFlash = false;
 
 // --- Состояние таймера обратного отсчёта (часы + минуты) ---
 let alarmRemainingSec = 0;
 let alarmRunning = false;
 let alarmInterval = null;
+let alarmEndTime = 0;
 
 // --- Элементы DOM ---
 const sceneBgEl = document.getElementById('scene-bg');
@@ -947,9 +949,22 @@ function syncAlarmUI() {
   }
 }
 
+function refreshAlarmCountdown() {
+  if (!alarmRunning) return;
+  const leftSec = Math.max(0, Math.ceil((alarmEndTime - Date.now()) / 1000));
+  alarmRemainingSec = leftSec;
+  if (leftSec <= 0) {
+    stopAlarmCountdown();
+    playAlarmSound();
+  } else {
+    syncAlarmUI();
+  }
+}
+
 function stopAlarmCountdown() {
   alarmRunning = false;
   alarmRemainingSec = 0;
+  alarmEndTime = 0;
   if (alarmInterval) {
     clearInterval(alarmInterval);
     alarmInterval = null;
@@ -967,18 +982,11 @@ function startAlarmCountdown() {
   }
 
   alarmRemainingSec = sec;
+  alarmEndTime = Date.now() + sec * 1000;
   alarmRunning = true;
   syncAlarmUI();
 
-  alarmInterval = setInterval(() => {
-    alarmRemainingSec -= 1;
-    if (alarmRemainingSec <= 0) {
-      stopAlarmCountdown();
-      playAlarmSound();
-    } else {
-      syncAlarmUI();
-    }
-  }, 1000);
+  alarmInterval = setInterval(refreshAlarmCountdown, 500);
 }
 
 function openAlarmModal() {
@@ -1285,7 +1293,7 @@ function makeFreshPumpkin(id) {
 
 function saveState(showFlash = false) {
   const toSave = {
-    pumpkins: state.pumpkins.map(p => ({ ...p, running: false })),
+    pumpkins: state.pumpkins.map(p => ({ ...p, running: false, lastTickAt: null })),
     popHistory: state.popHistory
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
@@ -1577,7 +1585,13 @@ function toggleTimer(id) {
   const target = state.pumpkins.find(p => p.id === id);
   if (!target || target.popped) return;
 
+  const now = Date.now();
+  if (target.running && target.lastTickAt) {
+    target.seconds += Math.max(0, Math.floor((now - target.lastTickAt) / 1000));
+  }
+
   target.running = !target.running;
+  target.lastTickAt = target.running ? now : null;
 
   renderGarden();
   saveState();
@@ -1640,13 +1654,21 @@ function undoLastPop() {
 
 function startGlobalTicker() {
   if (tickerInterval) clearInterval(tickerInterval);
+  lastTickerNow = Date.now();
+
   tickerInterval = setInterval(() => {
+    const now = Date.now();
+    const elapsedSec = Math.max(0, Math.floor((now - lastTickerNow) / 1000));
+    if (elapsedSec <= 0) return;
+    lastTickerNow = now;
+
     if (editingTaskId !== null) return;
 
     let changed = false;
     state.pumpkins.forEach(p => {
       if (p.running && !p.popped) {
-        p.seconds += 1;
+        p.seconds += elapsedSec;
+        p.lastTickAt = now;
         changed = true;
       }
     });
@@ -1656,7 +1678,7 @@ function startGlobalTicker() {
         saveState();
       }
     }
-  }, 1000);
+  }, 500);
 }
 
 // --- Привязка событий ---
@@ -1697,7 +1719,7 @@ if (btnChooseBg && customBgInput) {
       customBgDataUrl = reader.result;
       try {
         localStorage.setItem(CUSTOM_BG_KEY, customBgDataUrl);
-      } catch (_) {}
+      } catch (_) { }
       applyCustomBackground();
     };
     reader.readAsDataURL(file);

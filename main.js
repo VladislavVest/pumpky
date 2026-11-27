@@ -1,5 +1,8 @@
-const { app, BrowserWindow, ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { autoUpdater } = require('electron-updater');
 const path = require('path');
+
+let isInstallingUpdate = false;
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -12,8 +15,9 @@ function createWindow() {
     autoHideMenuBar: true,
     title: 'Pumpky - Task Tracker',
     icon: path.join(__dirname, 'Sourses', 'img', 'halloween.png'),
-        webPreferences: {
+    webPreferences: {
       nodeIntegration: false,
+      backgroundThrottling: false,
       contextIsolation: true,
       preload: path.join(__dirname, 'preload.js')
     }
@@ -24,6 +28,43 @@ function createWindow() {
   win.once('ready-to-show', () => {
     win.show();
   });
+
+  return win;
+}
+
+function setupAutoUpdater(mainWindow) {
+  if (!app.isPackaged) {
+    return;
+  }
+
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+
+  autoUpdater.on('error', (err) => {
+    console.error('Ошибка автообновления:', err == null ? 'unknown' : err.message);
+  });
+
+  autoUpdater.on('update-downloaded', (info) => {
+    dialog.showMessageBox(mainWindow, {
+      type: 'info',
+      title: 'Обновление Pumpky',
+      message: `Скачана новая версия ${info.version}`,
+      detail: 'Перезапустить приложение сейчас, чтобы применить обновление?',
+      buttons: ['Перезапустить', 'Позже'],
+      defaultId: 0,
+      cancelId: 1
+    }).then((result) => {
+      if (result.response === 0) {
+        isInstallingUpdate = true;
+        setImmediate(() => {
+          app.removeAllListeners('window-all-closed');
+          autoUpdater.quitAndInstall(false, true);
+        });
+      }
+    });
+  });
+
+  autoUpdater.checkForUpdates();
 }
 
 ipcMain.on('quit-app', () => {
@@ -31,13 +72,18 @@ ipcMain.on('quit-app', () => {
 });
 
 app.whenReady().then(() => {
-  createWindow();
+  const mainWindow = createWindow();
+  setupAutoUpdater(mainWindow);
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (BrowserWindow.getAllWindows().length === 0) {
+      const w = createWindow();
+      setupAutoUpdater(w);
+    }
   });
 });
 
 app.on('window-all-closed', () => {
+  if (isInstallingUpdate) return;
   if (process.platform !== 'darwin') app.quit();
 });
